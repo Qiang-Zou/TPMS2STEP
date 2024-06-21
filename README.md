@@ -1,9 +1,13 @@
 # TPMS2STEP
 
-- By: Yaonaiming Zhao and Qiang Zou  (built on top of Charlie C. L. Wang's MeshWorks)
--  email: qzou.code@gmail.com
-- webpage: https://qiang-zou.github.io/
+- By Yaonaiming Zhao and Qiang Zou (built on top of Charlie C. L. Wang's MeshWorks)
+- Email: qzou.code@gmail.com
+- Webpage: https://qiang-zou.github.io/
 - Latest Release: 2024.06.21
+
+This tool can translate Triply periodic minimal surface (TPMS) microstructure models to STEP files, the standard data exchange format of CAD/CAM/CAE. It also provides the following features: 
+- Error-controlling: the tool can ensure that all translated STEP models are below a given error threshold;
+- Continuity-preserving: the tool can preserve the C2 continuity among surfaces of a TPMS model after translation.
 
 ## !important
 The source code was developed as a byproduct of the projects and methods presented in [1].
@@ -57,4 +61,4 @@ void setTolerance(float); // set the tolerance
 6.References
 -------------
 
-- [1] Yaonaiming Zhao, Qiang Zou, Guoyue Luo, Jiayu Wu, Sifan Chen, Depeng Gao, Minghao Xuan, Fuyu Wang, TPMS2STEP: error-controlled and C2 continuity-preserving translation of TPMS models to STEP files based on constrained-PIA, Computer-Aided Design (2024).
+- [1] Yaonaiming Zhao, Qiang Zou, Guoyue Luo, Jiayu Wu, Sifan Chen, Depeng Gao, Minghao Xuan, Fuyu Wang, TPMS2STEP: error-controlled and C2 continuity-preserving translation of TPMS models to STEP files based on constrained-PIA, Computer-Aided Design (2024). https://doi.org/10.1016/j.cad.2024.103726
