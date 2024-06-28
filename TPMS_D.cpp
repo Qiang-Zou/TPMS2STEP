@@ -85,14 +85,6 @@ bool TPMS_D::constructSolidModel() {
     TColgp_Array2OfPnt* ctrlpts_2 = new TColgp_Array2OfPnt(1, NumRows, 1, NumCols);
 
     // assembling
-
-#ifdef USE_QUAD_HEX_MESH
-    int numberOfQuadMesh = 6;
-    std::vector<float> quadMeshPoints_1;
-    std::vector<float> quadMeshPoints_2;
-    std::vector<float> quadMeshPointsTotal;
-#endif
-
     std::vector<math_Matrix> surfaceMatrixVector;
     std::vector<math_Matrix> surfaceMatrixVectorSecond;
     std::vector<Handle(Geom_BSplineSurface)> cellSurfaceVector;
@@ -107,29 +99,6 @@ bool TPMS_D::constructSolidModel() {
             (*ctrlpts_2).SetValue(i,j,gp_Pnt(controlPointsMinusPIA((i-1)*NumCols+(j-1), 0), controlPointsMinusPIA((i-1)*NumCols+(j-1), 1), controlPointsMinusPIA((i-1)*NumCols+(j-1), 2)));
         }
     }
-
-#ifdef USE_QUAD_HEX_MESH
-    Handle(Geom_BSplineSurface) firstSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_1,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    Handle(Geom_BSplineSurface) secondSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_2,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    extractMesh(firstSplineSurface, quadMeshPoints_1, numberOfQuadMesh);
-    extractMesh(secondSplineSurface, quadMeshPoints_2, numberOfQuadMesh);
-#endif
 
     int controlPointsColLength = (*ctrlpts_1).ColLength();
     int controlPointsRowLength = (*ctrlpts_1).RowLength();
@@ -148,25 +117,6 @@ bool TPMS_D::constructSolidModel() {
     math_Matrix surface_4_Second(1, (*ctrlpts_1).Size(), 1, 3);
     math_Matrix surface_5_Second(1, (*ctrlpts_1).Size(), 1, 3);
     math_Matrix surface_6_Second(1, (*ctrlpts_1).Size(), 1, 3);
-
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadMeshMatrix_1(1, numberOfQuadMesh*numberOfQuadMesh, 1, 3);
-    math_Matrix quadMeshMatrix_2(1, numberOfQuadMesh*numberOfQuadMesh, 1, 3);
-
-    std::vector<math_Matrix> quadMeshVector_1;
-    std::vector<math_Matrix> quadMeshVector_2;
-
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+2];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3+2];
-        }
-    }
-#endif
 
     TColgp_Array2OfPnt controlPoints_1(1, controlPointsColLength, 1, controlPointsRowLength);
     TColgp_Array2OfPnt controlPoints_2(1, controlPointsColLength, 1, controlPointsRowLength);
@@ -273,12 +223,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     cellSurfacePointsVector.push_back(controlPoints_1);
-    
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadTemp1 = F1 * quadMeshMatrix_1.Transposed();
-    math_Matrix quadTemp12 = quadTemp1.Transposed();
-    quadMeshVector_1.push_back(quadTemp12);
-#endif
 
     math_Matrix temp2 = F2 * surface_0_Second.Transposed();
     math_Matrix temp22 = temp2.Transposed();
@@ -297,17 +241,6 @@ bool TPMS_D::constructSolidModel() {
     }
     cellSurfacePointsVector.push_back(controlPoints_2);
 
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadTemp2 = F2 * quadMeshMatrix_2.Transposed();
-    math_Matrix quadTemp22 = quadTemp2.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp22(i*numberOfQuadMesh+j+1, 1) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp22);
-#endif
-
     math_Matrix temp3 = F3 * surface_0_Second.Transposed();
     math_Matrix temp33 = temp3.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -324,17 +257,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     cellSurfacePointsVector.push_back(controlPoints_3);
-
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadTemp3 = F3 * quadMeshMatrix_2.Transposed();
-    math_Matrix quadTemp32 = quadTemp3.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp32(i*numberOfQuadMesh+j+1, 2) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp32);
-#endif
 
     math_Matrix temp4 = F4 * surface_0_Second.Transposed();
     math_Matrix temp44 = temp4.Transposed();
@@ -353,19 +275,6 @@ bool TPMS_D::constructSolidModel() {
     }
     cellSurfacePointsVector.push_back(controlPoints_4);
 
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadTemp4 = F4 * quadMeshMatrix_2.Transposed();
-    math_Matrix quadTemp42 = quadTemp4.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp42(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp42);
-#endif
-
     math_Matrix temp5 = F5 * surface_0.Transposed();
     math_Matrix temp55 = temp5.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -382,18 +291,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     cellSurfacePointsVector.push_back(controlPoints_5);
-
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadTemp5 = F5 * quadMeshMatrix_1.Transposed();
-    math_Matrix quadTemp52 = quadTemp5.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp52(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp52(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp52);
-#endif
 
     math_Matrix temp6 = F6 * surface_0.Transposed();
     math_Matrix temp66 = temp6.Transposed();
@@ -412,18 +309,6 @@ bool TPMS_D::constructSolidModel() {
     }
     cellSurfacePointsVector.push_back(controlPoints_6);
 
-#ifdef USE_QUAD_HEX_MESH
-    math_Matrix quadTemp6 = F6 * quadMeshMatrix_1.Transposed();
-    math_Matrix quadTemp62 = quadTemp6.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp62(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp62(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp62);
-#endif
-
     temp1 = F1 * surface_0_Second.Transposed();
     surface_1_Second = temp1.Transposed();
     surfaceMatrixVectorSecond.push_back(surface_1_Second);
@@ -433,12 +318,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     cellSurfacePointsVector.push_back(controlPoints_1);
-
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp1 = F1 * quadMeshMatrix_2.Transposed();
-    quadTemp12 = quadTemp1.Transposed();
-    quadMeshVector_2.push_back(quadTemp12);
-#endif
 
     temp2 = F2 * surface_0.Transposed();
     temp22 = temp2.Transposed();
@@ -457,17 +336,6 @@ bool TPMS_D::constructSolidModel() {
     }
     cellSurfacePointsVector.push_back(controlPoints_2);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp2 = F2 * quadMeshMatrix_1.Transposed();
-    quadTemp22 = quadTemp2.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp22(i*numberOfQuadMesh+j+1, 1) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp22);
-#endif
-
     temp3 = F3 * surface_0.Transposed();
     temp33 = temp3.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -484,17 +352,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     cellSurfacePointsVector.push_back(controlPoints_3);
-
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp3 = F3 * quadMeshMatrix_1.Transposed();
-    quadTemp32 = quadTemp3.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp32(i*numberOfQuadMesh+j+1, 2) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp32);
-#endif
 
     temp4 = F4 * surface_0.Transposed();
     temp44 = temp4.Transposed();
@@ -513,19 +370,6 @@ bool TPMS_D::constructSolidModel() {
     }
     cellSurfacePointsVector.push_back(controlPoints_4);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp4 = F4 * quadMeshMatrix_1.Transposed();
-    quadTemp42 = quadTemp4.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp42(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp42);
-#endif
-
     temp5 = F5 * surface_0_Second.Transposed();
     temp55 = temp5.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -543,18 +387,6 @@ bool TPMS_D::constructSolidModel() {
     }
     cellSurfacePointsVector.push_back(controlPoints_5);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp5 = F5 * quadMeshMatrix_2.Transposed();
-    quadTemp52 = quadTemp5.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp52(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp52(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp52);
-#endif
-
     temp6 = F6 * surface_0_Second.Transposed();
     temp66 = temp6.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -571,18 +403,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     cellSurfacePointsVector.push_back(controlPoints_6);
-
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp6 = F6 * quadMeshMatrix_2.Transposed();
-    quadTemp62 = quadTemp6.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp62(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp62(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp62);
-#endif
 
     // duplicatet the faces for 8 times
     std::vector<TColgp_Array2OfPnt> controlPointsTotalVector;
@@ -612,31 +432,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(controlPointsTemp);
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -665,31 +460,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -720,31 +490,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -774,31 +519,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -827,31 +547,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -882,31 +577,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -936,31 +606,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -989,31 +634,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -1047,43 +667,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
 
-#ifdef USE_QUAD_HEX_MESH
-    Handle(Geom_BSplineSurface) thirdSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_1,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    Handle(Geom_BSplineSurface) fourthSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_2,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    quadMeshPoints_1.clear();
-    quadMeshPoints_2.clear();
-    quadMeshVector_1.clear();
-    quadMeshVector_2.clear();
-    extractMesh(thirdSplineSurface, quadMeshPoints_1, numberOfQuadMesh);
-    extractMesh(fourthSplineSurface, quadMeshPoints_2, numberOfQuadMesh);
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+2];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3+2];
-        }
-    }
-#endif
-
     for (int i = 1; i <= controlPointsColLength; i++) {
         for (int j = 1; j <= controlPointsRowLength; j++) {
             surface_0((i - 1) * controlPointsRowLength + j, 1) = (*ctrlpts_1).Value(i, j).X();
@@ -1103,12 +686,6 @@ bool TPMS_D::constructSolidModel() {
     surface_1 = temp1.Transposed();
     surfaceMatrixVector.push_back(surface_1);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp1 = F1 * quadMeshMatrix_1.Transposed();
-    quadTemp12 = quadTemp1.Transposed();
-    quadMeshVector_1.push_back(quadTemp12);
-#endif
-
     temp2 = F2 * surface_0_Second.Transposed();
     temp22 = temp2.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -1119,17 +696,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     surfaceMatrixVector.push_back(surface_2);
-
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp2 = F2 * quadMeshMatrix_2.Transposed();
-    quadTemp22 = quadTemp2.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp22(i*numberOfQuadMesh+j+1, 1) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp22);
-#endif
 
     temp3 = F3 * surface_0_Second.Transposed();
     temp33 = temp3.Transposed();
@@ -1142,17 +708,6 @@ bool TPMS_D::constructSolidModel() {
     }
     surfaceMatrixVector.push_back(surface_3);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp3 = F3 * quadMeshMatrix_2.Transposed();
-    quadTemp32 = quadTemp3.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp32(i*numberOfQuadMesh+j+1, 2) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp32);
-#endif
-
     temp4 = F4 * surface_0_Second.Transposed();
     temp44 = temp4.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -1163,19 +718,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     surfaceMatrixVector.push_back(surface_4);
-
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp4 = F4 * quadMeshMatrix_2.Transposed();
-    quadTemp42 = quadTemp4.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp42(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp42);
-#endif
 
     temp5 = F5 * surface_0.Transposed();
     temp55 = temp5.Transposed();
@@ -1188,18 +730,6 @@ bool TPMS_D::constructSolidModel() {
     }
     surfaceMatrixVector.push_back(surface_5);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp5 = F5 * quadMeshMatrix_1.Transposed();
-    quadTemp52 = quadTemp5.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp52(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp52(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp52);
-#endif
-
     temp6 = F6 * surface_0.Transposed();
     temp66 = temp6.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -1211,27 +741,9 @@ bool TPMS_D::constructSolidModel() {
     }
     surfaceMatrixVector.push_back(surface_6);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp6 = F6 * quadMeshMatrix_1.Transposed();
-    quadTemp62 = quadTemp6.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp62(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp62(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_1.push_back(quadTemp62);
-#endif
-
     temp1 = F1 * surface_0_Second.Transposed();
     surface_1_Second = temp1.Transposed();
     surfaceMatrixVectorSecond.push_back(surface_1_Second);
-
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp1 = F1 * quadMeshMatrix_2.Transposed();
-    quadTemp12 = quadTemp1.Transposed();
-    quadMeshVector_2.push_back(quadTemp12);
-#endif
 
     temp2 = F2 * surface_0.Transposed();
     temp22 = temp2.Transposed();
@@ -1244,17 +756,6 @@ bool TPMS_D::constructSolidModel() {
     }
     surfaceMatrixVectorSecond.push_back(surface_2_Second);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp2 = F2 * quadMeshMatrix_1.Transposed();
-    quadTemp22 = quadTemp2.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp22(i*numberOfQuadMesh+j+1, 1) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp22);
-#endif
-
     temp3 = F3 * surface_0.Transposed();
     temp33 = temp3.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -1266,17 +767,6 @@ bool TPMS_D::constructSolidModel() {
     }
     surfaceMatrixVectorSecond.push_back(surface_3_Second);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp3 = F3 * quadMeshMatrix_1.Transposed();
-    quadTemp32 = quadTemp3.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp32(i*numberOfQuadMesh+j+1, 2) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp32);
-#endif
-
     temp4 = F4 * surface_0.Transposed();
     temp44 = temp4.Transposed();
     for (Standard_Integer i = 1; i <= controlPointsColLength; i++) {
@@ -1287,19 +777,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     surfaceMatrixVectorSecond.push_back(surface_4_Second);
-    
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp4 = F4 * quadMeshMatrix_1.Transposed();
-    quadTemp42 = quadTemp4.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp42(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp42(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp42);
-#endif
 
     temp5 = F5 * surface_0_Second.Transposed();
     temp55 = temp5.Transposed();
@@ -1311,18 +788,6 @@ bool TPMS_D::constructSolidModel() {
         }
     }
     surfaceMatrixVectorSecond.push_back(surface_5_Second);
-    
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp5 = F5 * quadMeshMatrix_2.Transposed();
-    quadTemp52 = quadTemp5.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp52(i*numberOfQuadMesh+j+1, 1) += 1;
-            quadTemp52(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp52);
-#endif
 
     temp6 = F6 * surface_0_Second.Transposed();
     temp66 = temp6.Transposed();
@@ -1335,18 +800,6 @@ bool TPMS_D::constructSolidModel() {
     }
     surfaceMatrixVectorSecond.push_back(surface_6_Second);
 
-#ifdef USE_QUAD_HEX_MESH
-    quadTemp6 = F6 * quadMeshMatrix_2.Transposed();
-    quadTemp62 = quadTemp6.Transposed();
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadTemp62(i*numberOfQuadMesh+j+1, 2) += 1;
-            quadTemp62(i*numberOfQuadMesh+j+1, 3) += 1;
-        }
-    }
-    quadMeshVector_2.push_back(quadTemp62);
-#endif
-
     for (int i = 0; i < 6; i++) {
         for (int j = 0; j < 4; j++) {
             math_Matrix surfaceTemp(1, (*ctrlpts_1).Size(), 1, 3);
@@ -1372,31 +825,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -1427,31 +855,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -1480,31 +883,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -1535,31 +913,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -1588,31 +941,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -1643,31 +971,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -1697,31 +1000,6 @@ bool TPMS_D::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 1 || j == 3) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += (eta[j].Value(1)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
@@ -1750,31 +1028,6 @@ bool TPMS_D::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(scaleControlPoints(controlPointsTemp));
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp_cal1(1, 3, 1, numberOfQuadMesh*numberOfQuadMesh);
-            if (j == 0 || j == 2) {
-                quadTemp_cal1 = Q[j] * quadMeshVector_1[i].Transposed();
-            }
-            else {
-                quadTemp_cal1 = Q[j] * quadMeshVector_2[i].Transposed();
-            }
-            math_Matrix quadTemp_cal2 = quadTemp_cal1.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 2) += (eta[j].Value(2)+2);
-                    quadTemp_cal2(p*numberOfQuadMesh+q+1, 3) += (eta[j].Value(3)+2);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp_cal2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -1871,32 +1124,6 @@ bool TPMS_D::constructSolidModel() {
     std::vector<Handle(Geom_BSplineSurface)> faceVector;
 
     makeSolidModelFacesDiamond(faceVector, cellSurfaceVector, cellBoundarySurfaceVector);
-    
-#ifdef USE_QUAD_HEX_MESH
-    std::vector<float> quadMeshAll;
-    for (int i = 0; i < this->getCellNumberX(); i++) {
-        for (int j = 0; j < this->getCellNumberY(); j++) {
-            for (int k = 0; k < this->getCellNumberZ(); k++) {
-                for (int m = 0; m < numberOfQuadMesh*numberOfQuadMesh*384; m++) {
-                    quadMeshAll.push_back(quadMeshPointsTotal[m*3]+i*cellSizeX);
-                    quadMeshAll.push_back(quadMeshPointsTotal[m*3+1]+j*cellSizeY);
-                    quadMeshAll.push_back(quadMeshPointsTotal[m*3+2]+k*cellSizeZ);
-                }
-            }
-        }
-    }
-    writeHexahedralMesh(quadMeshAll, 384*this->getCellNumberX()*this->getCellNumberY()*this->getCellNumberZ(), 192, numberOfQuadMesh, "diamond_hex.off");
-
-    std::vector<float> quadMeshEdge;
-    for (int i=0;i<faceVector.size();i++) {
-        quadMeshEdge.clear();
-        extractMesh(faceVector[i], quadMeshEdge, numberOfQuadMesh);
-        for (int j = 0; j < numberOfQuadMesh*numberOfQuadMesh*3; j++) {
-            quadMeshAll.push_back(quadMeshEdge[j]);
-        }
-    }
-    writeMesh(quadMeshAll, 384*this->getCellNumberX()*this->getCellNumberY()*this->getCellNumberZ()+faceVector.size(), numberOfQuadMesh, "diamond.off");
-#endif
 
     for (int i = 0; i < this->getCellNumberX(); i++) {
         for (int j = 0; j < this->getCellNumberY(); j++) {

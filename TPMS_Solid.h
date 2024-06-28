@@ -91,8 +91,4 @@ public:
     TColgp_Array2OfPnt scaleControlPoints(TColgp_Array2OfPnt ctrlpts);
 };
 
-extern void extractMesh(Handle_Geom_BSplineSurface, std::vector<float>&, int);
-extern void writeMesh(std::vector<float>&, int, int, std::string);
-extern void writeHexahedralMesh(std::vector<float>&, int, int, int, std::string);
-
 #endif

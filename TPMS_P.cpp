@@ -85,14 +85,6 @@ bool TPMS_P::constructSolidModel() {
     TColgp_Array2OfPnt* ctrlpts_2 = new TColgp_Array2OfPnt(1, NumRows, 1, NumCols);
 
     // assembling
-
-#ifdef USE_QUAD_HEX_MESH
-    int numberOfQuadMesh = 8;
-    std::vector<float> quadMeshPoints_1;
-    std::vector<float> quadMeshPoints_2;
-    std::vector<float> quadMeshPointsTotal;
-#endif
-
     const double ksi = 1.0 / sqrt(2.0);
     std::vector<math_Matrix> F;
     math_Matrix F1(1, 3, 1, 3, 0);
@@ -219,44 +211,6 @@ bool TPMS_P::constructSolidModel() {
     int controlPointsColLength = (*ctrlpts_1).ColLength();
     int controlPointsRowLength = (*ctrlpts_1).RowLength();
 
-#ifdef USE_QUAD_HEX_MESH
-    Handle(Geom_BSplineSurface) firstSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_1,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    Handle(Geom_BSplineSurface) secondSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_2,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    extractMesh(firstSplineSurface, quadMeshPoints_1, numberOfQuadMesh);
-    extractMesh(secondSplineSurface, quadMeshPoints_2, numberOfQuadMesh);
-
-    math_Matrix quadMeshMatrix_1(1, numberOfQuadMesh*numberOfQuadMesh, 1, 3);
-    math_Matrix quadMeshMatrix_2(1, numberOfQuadMesh*numberOfQuadMesh, 1, 3);
-    std::vector<math_Matrix> quadMeshVector_1;
-
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+2];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_2(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_2[(i*numberOfQuadMesh+j)*3+2];
-        }
-    }
-#endif
-
     for (int k = 0; k < 6; k++) {
         math_Matrix sampleSurface(1, (*ctrlpts_1).Size(), 1, 3);
         math_Matrix tempS = F[k] * surface_0.Transposed();
@@ -282,19 +236,6 @@ bool TPMS_P::constructSolidModel() {
         }
         curveControlPointsVector.push_back(curveCpts);
 
-#ifdef USE_QUAD_HEX_MESH
-        math_Matrix quadTemp = F[k] * quadMeshMatrix_1.Transposed();
-        math_Matrix quadTemp2 = quadTemp.Transposed();
-        for (int i = 0; i < numberOfQuadMesh; i++) {
-            for (int j = 0; j < numberOfQuadMesh; j++) {
-                quadTemp2(i*numberOfQuadMesh+j+1, 1) += eta_f[k](1);
-                quadTemp2(i*numberOfQuadMesh+j+1, 2) += eta_f[k](2);
-                quadTemp2(i*numberOfQuadMesh+j+1, 3) += eta_f[k](3);
-            }
-        }
-        quadMeshVector_1.push_back(quadTemp2);
-#endif
-
     }
 
     for (int i = 0; i < 6; i++) {
@@ -317,35 +258,11 @@ bool TPMS_P::constructSolidModel() {
             }
             controlPointsTotalVector.push_back(controlPointsTemp);
 
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp = Q[j] * quadMeshVector_1[i].Transposed();
-            math_Matrix quadTemp2 = quadTemp.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
-
         }
     }
 
     controlPointsVector.clear();
     surfaceMatrixVector.clear();
-    
-#ifdef USE_QUAD_HEX_MESH
-    quadMeshVector_1.clear();
-    quadMeshPoints_1.clear();
-#endif
 
     // read the surface data
     readSemiFundamentalPatch(surfacePlusMatrix, surfaceMinusMatrix, &numberOfPointCloud, this->getOffsetValue2());
@@ -362,26 +279,6 @@ bool TPMS_P::constructSolidModel() {
     }
     controlPointsColLength = (*ctrlpts_1).ColLength();
     controlPointsRowLength = (*ctrlpts_1).RowLength();
-
-#ifdef USE_QUAD_HEX_MESH
-    Handle(Geom_BSplineSurface) secondBSplineSurface = new Geom_BSplineSurface(
-        *ctrlpts_1,
-        *Uknot,
-        *Vknot,
-        *multiplicitiesU,
-        *multiplicitiesV,
-        3,
-        3
-    );
-    extractMesh(secondBSplineSurface, quadMeshPoints_1, numberOfQuadMesh);
-    for (int i = 0; i < numberOfQuadMesh; i++) {
-        for (int j = 0; j < numberOfQuadMesh; j++) {
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,1) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,2) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+1];
-            quadMeshMatrix_1(i*numberOfQuadMesh+j+1 ,3) = quadMeshPoints_1[(i*numberOfQuadMesh+j)*3+2];
-        }
-    }
-#endif
 
     for (int k = 0; k < 6; k++) {
         math_Matrix sampleSurface(1, (*ctrlpts_1).Size(), 1, 3);
@@ -407,19 +304,6 @@ bool TPMS_P::constructSolidModel() {
         }
         curveControlPointsVector.push_back(curveCpts);
 
-#ifdef USE_QUAD_HEX_MESH
-        math_Matrix quadTemp = F[k] * quadMeshMatrix_1.Transposed();
-        math_Matrix quadTemp2 = quadTemp.Transposed();
-        for (int i = 0; i < numberOfQuadMesh; i++) {
-            for (int j = 0; j < numberOfQuadMesh; j++) {
-                quadTemp2(i*numberOfQuadMesh+j+1, 1) += eta_f[k](1);
-                quadTemp2(i*numberOfQuadMesh+j+1, 2) += eta_f[k](2);
-                quadTemp2(i*numberOfQuadMesh+j+1, 3) += eta_f[k](3);
-            }
-        }
-        quadMeshVector_1.push_back(quadTemp2);
-#endif
-
     }
 
     for (int i = 0; i < 6; i++) {
@@ -441,25 +325,6 @@ bool TPMS_P::constructSolidModel() {
                 }
             }
             controlPointsTotalVector.push_back(controlPointsTemp);
-
-#ifdef USE_QUAD_HEX_MESH
-            math_Matrix quadTemp = Q[j] * quadMeshVector_1[i].Transposed();
-            math_Matrix quadTemp2 = quadTemp.Transposed();
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadTemp2(p*numberOfQuadMesh+q+1, 1) += eta[j].Value(1);
-                    quadTemp2(p*numberOfQuadMesh+q+1, 2) += eta[j].Value(2);
-                    quadTemp2(p*numberOfQuadMesh+q+1, 3) += eta[j].Value(3);
-                }
-            }
-            for (int p = 0; p < numberOfQuadMesh; p++) {
-                for (int q = 0; q < numberOfQuadMesh; q++) {
-                    quadMeshPointsTotal.push_back(quadTemp2(p*numberOfQuadMesh+q+1, 1));
-                    quadMeshPointsTotal.push_back(quadTemp2(p*numberOfQuadMesh+q+1, 2));
-                    quadMeshPointsTotal.push_back(quadTemp2(p*numberOfQuadMesh+q+1, 3));
-                }
-            }
-#endif
 
         }
     }
@@ -543,33 +408,6 @@ bool TPMS_P::constructSolidModel() {
             }
         }
     }
-
-#ifdef USE_QUAD_HEX_MESH
-    std::vector<float> quadMeshAll;
-    for (int i = 0; i < this->getCellNumberX(); i++) {
-        for (int j = 0; j < this->getCellNumberY(); j++) {
-            for (int k = 0; k < this->getCellNumberZ(); k++) {
-                for (int m = 0; m < numberOfQuadMesh*numberOfQuadMesh*96; m++) {
-                    quadMeshAll.push_back(quadMeshPointsTotal[m*3]+i*cellSizeX);
-                    quadMeshAll.push_back(quadMeshPointsTotal[m*3+1]+j*cellSizeY);
-                    quadMeshAll.push_back(quadMeshPointsTotal[m*3+2]+k*cellSizeZ);
-                }
-            }
-        }
-    }
-    writeHexahedralMesh(quadMeshAll, 96*this->getCellNumberX()*this->getCellNumberY()*this->getCellNumberZ(), 48, numberOfQuadMesh, "schwarzp_hex.off");
-
-    std::vector<float> quadMeshEdge;
-    for (int i=0;i<faceVector.size();i++) {
-        quadMeshEdge.clear();
-        extractMesh(faceVector[i], quadMeshEdge, numberOfQuadMesh);
-        for (int j = 0; j < numberOfQuadMesh*numberOfQuadMesh*3; j++) {
-            quadMeshAll.push_back(quadMeshEdge[j]);
-        }
-    }
-
-    writeMesh(quadMeshAll, 96*this->getCellNumberX()*this->getCellNumberY()*this->getCellNumberZ()+faceVector.size(), numberOfQuadMesh, "schwarzp.off");
-#endif
 
     for (int i = 0; i < this->getCellNumberX(); i++) {
         for (int j = 0; j < this->getCellNumberY(); j++) {

@@ -15,9 +15,6 @@ if(OPENMP_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-############ control whether to use quad/hexahedral mesh function ############
-add_compile_definitions(USE_QUAD_HEX_MESH)
-
 include_directories(.)
 include_directories(./QMeshLib)
 include_directories(./QMeshLib/OpenMesh)
@@ -57,18 +54,17 @@ add_executable(${PROJECT_NAME} ${MAIN_SOURCE_FILES} ${MAIN_HEADER_FILES} ${QMESH
  ${GLUI_SOURCE_1} ${GLUI_SOURCE_2} ${GLUI_HEADER})
 
 add_library(piaCuda piaCuda.cu piaCuda.h)
-add_library(quadHexMesh quadMesh.h quadMesh.cpp)
 
 target_link_libraries(${PROJECT_NAME} GLU glut GLEW)
 target_link_libraries(${PROJECT_NAME} Qt6::Core Qt6::Gui Qt6::Xml)
 target_link_libraries(${PROJECT_NAME} OpenGL::GL)
 target_link_libraries(${PROJECT_NAME} piaCuda)
-target_link_libraries(${PROJECT_NAME} quadHexMesh)
 
 # OCCT
 target_link_libraries(${PROJECT_NAME} TKBRep TKG3d TKXSBase TKMath TKernel TKTopAlgo TKDESTEP TKGeomAlgo)
 
-# Python
+
+########### python ###########
 target_link_libraries(${PROJECT_NAME} python3.10)
 
 
